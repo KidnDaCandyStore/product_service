@@ -7,8 +7,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///products.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///product.db'
 db = SQLAlchemy(app)
 
 
@@ -19,6 +18,16 @@ class Product(db.Model):
     price       = db.Column(db.Float)
     quantity    = db.Column(db.Integer)
 
+    # JSON_OUTPUT PROPERTY HANDLER FOR OUTPUTING DATA: 
+    @property
+    def json_output(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'price': self.price,
+            'quantity': self.quantity
+        }
+
 
 # PRODUCTS: FUNCTION: (GET/MAKE PRODUCTS)
 @app.route('/products', methods = ['GET', 'POST'])
@@ -28,9 +37,8 @@ def products():
         # RETRIEVE ALL PRODUCTS FROM THE DATABASE: 
         products = Product.query.all()
 
-        # GRAB THE PRODUCT JSON FILE AND RETURN IT: 
-        json_product_info = jsonify([product.serialize for product in products])
-        return json_product_info
+        # GRAB THE PRODUCTS AND RETURN IT'S JSON FILE: 
+        return jsonify([product.json_output for product in products])
     
     # MAKE A PRODUCT: 
     elif request.method == 'POST':
@@ -42,13 +50,12 @@ def products():
         db.session.commit()
 
         # RETURN THE JSONIFIED PRODUCT INFO AND CONFIRM IT WITH CODE: 201
-        return jsonify(new_product.serialize), 201
-
+        return jsonify(new_product.json_output), 201
 
 # GET PRODUCT: FUNCTION: (VIA PRODUCT ID PARAM.)
 @app.route('/products/<int:product_id>', methods = ['GET'])
 def get_product(product_id):
-    return jsonify(Product.query.get_or_404(product_id).serialize)
+    return jsonify(Product.query.get_or_404(product_id).json_output)
 
 
 # CREATE DATABASE TABLES: FUNCTION: 
@@ -56,6 +63,6 @@ def get_product(product_id):
 def create_tables():
     db.create_all()
 
-
+# RUN THE APP! 
 if __name__ == '__main__':
     app.run(debug = True)
